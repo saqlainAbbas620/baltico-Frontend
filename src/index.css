@@ -1,0 +1,16 @@
+@import "tailwindcss";
+
+@theme {
+  /* Custom Colors */
+  --color-brand: #4484CE;
+  --color-cream: #f5f5f3;
+  --color-sand: #D9D9D9;
+  --color-gold: #F9CF00;
+  --color-amber: #F19F4D;
+  --color-ink: #0a0a0a;
+
+  /* Custom Font Families */
+  --font-display: "UnifrakturMaguntia", cursive;
+  --font-serif: "Cormorant Garamond", Georgia, serif;
+  --font-body: "Montserrat", sans-serif;
+}
