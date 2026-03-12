@@ -39,12 +39,13 @@ export default function ProfilePage() {
   useEffect(() => {
     fetchOrders();
     // Re-fetch when a new order is placed in this session
-    window.addEventListener("baltico:new-order", fetchOrders);
-    return () => window.removeEventListener("baltico:new-order", fetchOrders);
+    window.addEventListener("lumiere:new-order", fetchOrders);
+    return () => window.removeEventListener("lumiere:new-order", fetchOrders);
   }, []);
 
   async function save() {
     if (pass && pass !== confirm) { notify("Passwords don't match", true); return; }
+    if (pass && pass.length < 6)  { notify("Password must be at least 6 characters", true); return; }
     setLoading(true);
     try {
       const res = await apiProfile({ address: addr, phone, ...(pass ? { password: pass } : {}) });
@@ -52,11 +53,11 @@ export default function ProfilePage() {
       updateProfile({ address: updated?.address ?? addr, phone: updated?.phone ?? phone });
       setPass(""); setConfirm("");
       notify("Profile saved");
-    } catch {
-      updateProfile({ address: addr, phone });
-      notify("Saved locally");
+    } catch (err) {
+      notify(err?.response?.data?.message || "Failed to save profile", true);
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   }
 
   return (
@@ -136,7 +137,7 @@ export default function ProfilePage() {
                     {o.items?.length > 0 && (
                       <div className="flex items-center gap-2 flex-wrap">
                         {o.items.slice(0,4).map((item, idx) => (
-                          <div key={idx} className="relative shrink-0">
+                          <div key={idx} className="relative flex-shrink-0">
                             {item.img
                               ? <img src={item.img} alt={item.title} className="w-9 h-11 object-cover bg-cream" />
                               : <div className="w-9 h-11 bg-cream flex items-center justify-center text-[8px] text-sand font-body">IMG</div>
@@ -157,7 +158,7 @@ export default function ProfilePage() {
                       <p className="text-[10px] text-sand font-body truncate flex-1">
                         {o.items?.map(i => `${i.title} ×${i.qty}`).join(" · ")}
                       </p>
-                      <span className="text-[15px] font-semibold font-body shrink-0">{fmt(o.total)}</span>
+                      <span className="text-[15px] font-semibold font-body flex-shrink-0">{fmt(o.total)}</span>
                     </div>
 
                     {/* Delivery address */}

@@ -2,6 +2,7 @@ import { useEffect } from "react";
 import { BrowserRouter, Routes, Route, Navigate, useNavigate, useLocation } from "react-router-dom";
 import toast from "react-hot-toast";
 import { StoreProvider, useStore } from "./context/store";
+import { getToken } from "./api/axiosInstance";
 import Navbar      from "./components/layout/Navbar";
 import Footer      from "./components/layout/Footer";
 import Toast       from "./components/ui/Toast";
@@ -51,9 +52,9 @@ function VerifyRedirectHandler() {
       return;
     }
 
-    localStorage.setItem("baltico_token", token);
+    localStorage.setItem("lumiere_token", token);
     login(name, email, isAdmin, { id });
-    toast.success("✅ Email verified! Welcome to BaltiCo.");
+    toast.success("✅ Email verified! Welcome to Lumière.");
     navigate("/", { replace: true });
   }, []); // eslint-disable-line
 
@@ -61,34 +62,48 @@ function VerifyRedirectHandler() {
 }
 
 // ── Session expiry handler ────────────────────────────────────────────────────
+// Called by the axios interceptor when BOTH access token and refresh cookie fail.
+// Must call clearSession() from store so React state is updated immediately —
+// just removing localStorage keys does NOT update the user state in memory.
 function SessionHandler() {
-  const navigate = useNavigate();
+  const navigate      = useNavigate();
+  const { clearSession } = useStore();
 
   useEffect(() => {
     function handleExpired() {
-      localStorage.removeItem("baltico_token");
-      localStorage.removeItem("baltico_user");
-      localStorage.removeItem("baltico_cart");
+      clearSession();
       toast.error("Session expired. Please sign in again.");
       navigate("/auth", { replace: true });
     }
-    window.addEventListener("baltico:session-expired", handleExpired);
-    return () => window.removeEventListener("baltico:session-expired", handleExpired);
-  }, []);
+    window.addEventListener("lumiere:session-expired", handleExpired);
+    return () => window.removeEventListener("lumiere:session-expired", handleExpired);
+  }, [clearSession, navigate]);
 
   return null;
 }
 
 // ── Route guards ──────────────────────────────────────────────────────────────
+// sessionChecked: wait for the mount-time /auth/me validation to complete before
+// rendering protected routes — prevents a flash of protected content on expired sessions.
 function RequireAuth({ children }) {
-  const { user } = useStore();
-  return user ? children : <Navigate to="/auth" replace />;
+  const { user, sessionChecked } = useStore();
+
+  // Still validating — render nothing so the page doesn't flash
+  if (!sessionChecked) return null;
+
+  // Must have both a React user state AND a stored token
+  const hasToken = Boolean(getToken());
+  return (user && hasToken) ? children : <Navigate to="/auth" replace />;
 }
 
 function RequireAdmin({ children }) {
-  const { user } = useStore();
-  if (!user)           return <Navigate to="/auth" replace />;
-  if (!user.isAdmin)   return <Navigate to="/"    replace />;
+  const { user, sessionChecked } = useStore();
+
+  if (!sessionChecked) return null;
+
+  const hasToken = Boolean(getToken());
+  if (!user || !hasToken) return <Navigate to="/auth" replace />;
+  if (!user.isAdmin)       return <Navigate to="/"    replace />;
   return children;
 }
 

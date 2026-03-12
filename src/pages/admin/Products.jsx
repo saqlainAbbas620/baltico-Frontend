@@ -85,7 +85,7 @@ function ProductForm({ initial = BLANK, onSave, onCancel, saving, isEdit }) {
 
 function DeleteModal({ product, onConfirm, onCancel, loading }) {
   return (
-    <div className="fixed inset-0 z-500 flex items-center justify-center">
+    <div className="fixed inset-0 z-[500] flex items-center justify-center">
       <div className="absolute inset-0 bg-black/40" onClick={onCancel} />
       <div className="relative bg-white p-8 max-w-sm w-full mx-4 flex flex-col gap-5">
         <p className="text-[10px] font-bold tracking-[3px] uppercase text-red-500 font-body">DELETE PRODUCT</p>
@@ -114,59 +114,108 @@ export default function Products() {
   const [saving,       setSaving]       = useState(false);
   const [deleting,     setDeleting]     = useState(false);
 
+  // Fetch latest products from API on mount
   useEffect(() => {
-    apiGetProducts().then(res => {
-      const f = res.data?.data?.products;
-      if (f?.length) setProducts(f.map(p => ({ ...p, id: p._id || p.id })));
-    }).catch(() => {});
+    apiGetProducts()
+      .then(res => {
+        const f = res.data?.data?.products;
+        if (f?.length) setProducts(f.map(p => ({ ...p, id: p._id || p.id })));
+      })
+      .catch(() => {}); // silently keep seed/store products on API failure
   }, []);
 
   async function handleAdd(f) {
-    if (!f.title || !f.price) { notify("Title and price required", true); return; }
+    if (!f.title.trim()) { notify("Product title is required", true); return; }
+    if (!f.price)        { notify("Product price is required", true);  return; }
+
     const payload = {
-      ...f, price: +f.price, disc: +f.disc, quantity: +f.quantity || 100,
-      sizes: typeof f.sizes === "string" ? f.sizes.split(",").map(s => s.trim()).filter(Boolean) : f.sizes,
-      img: f.img || "https://images.unsplash.com/photo-1434389677669-e08b4cac3105?w=600",
-      img2: f.img2 || null,
+      title:    f.title.trim(),
+      cat:      f.cat,
+      price:    +f.price,
+      disc:     +f.disc || 0,
+      quantity: +f.quantity || 100,
+      sizes:    typeof f.sizes === "string" ? f.sizes.split(",").map(s => s.trim()).filter(Boolean) : f.sizes,
+      img:      f.img || "https://images.unsplash.com/photo-1434389677669-e08b4cac3105?w=600",
+      imgPublicId:  f.imgPublicId  || null,
+      img2:         f.img2 || null,
+      img2PublicId: f.img2PublicId || null,
+      desc:     f.desc || "",
     };
+
     setSaving(true);
     try {
-      const res = await apiCreateProduct(payload);
+      const res     = await apiCreateProduct(payload);
       const created = res.data?.data?.product;
       addProduct({ ...payload, ...(created || {}), id: created?._id || created?.id || Date.now() });
-    } catch { addProduct(payload); }
-    setMode(null); setSaving(false);
+      setMode(null);
+      notify("Product added successfully");
+    } catch (err) {
+      notify(err?.response?.data?.message || "Failed to add product", true);
+    } finally {
+      setSaving(false);
+    }
   }
 
   async function handleUpdate(f) {
-    if (!f.title || !f.price) { notify("Title and price required", true); return; }
+    if (!f.title.trim()) { notify("Product title is required", true); return; }
+    if (!f.price)        { notify("Product price is required", true);  return; }
+
     const payload = {
-      ...f, price: +f.price, disc: +f.disc, quantity: +f.quantity || 0,
-      sizes: typeof f.sizes === "string" ? f.sizes.split(",").map(s => s.trim()).filter(Boolean) : f.sizes,
-      img2: f.img2 || null,
+      title:    f.title.trim(),
+      cat:      f.cat,
+      price:    +f.price,
+      disc:     +f.disc || 0,
+      quantity: +f.quantity || 0,
+      sizes:    typeof f.sizes === "string" ? f.sizes.split(",").map(s => s.trim()).filter(Boolean) : f.sizes,
+      img:      f.img || "",
+      imgPublicId:  f.imgPublicId  || null,
+      img2:         f.img2 || null,
+      img2PublicId: f.img2PublicId || null,
+      desc:     f.desc || "",
     };
+
     const tid = editTarget._id || editTarget.id;
     setSaving(true);
-    try { await apiUpdateProduct(tid, payload); } catch {}
-    updateProduct(tid, payload);
-    setMode(null); setEditTarget(null); setSaving(false);
+    try {
+      const res     = await apiUpdateProduct(tid, payload);
+      const updated = res.data?.data?.product;
+      updateProduct(tid, updated || payload);
+      setMode(null);
+      setEditTarget(null);
+      notify("Product updated successfully");
+    } catch (err) {
+      notify(err?.response?.data?.message || "Failed to update product", true);
+    } finally {
+      setSaving(false);
+    }
   }
 
   async function handleDelete() {
     setDeleting(true);
     const tid = deleteTarget._id || deleteTarget.id;
-    try { await apiDeleteProduct(tid); } catch {}
-    removeProduct(tid); setDeleteTarget(null); setDeleting(false);
+    try {
+      await apiDeleteProduct(tid);
+      removeProduct(tid);
+      setDeleteTarget(null);
+      notify("Product deleted");
+    } catch (err) {
+      notify(err?.response?.data?.message || "Failed to delete product", true);
+      setDeleting(false);
+    }
   }
 
   const safeEditInitial = editTarget ? {
-    title: editTarget.title, cat: editTarget.cat,
-    price: String(editTarget.price), disc: String(editTarget.disc || 0),
-    quantity: String(editTarget.quantity !== undefined ? editTarget.quantity : 100),
-    sizes: Array.isArray(editTarget.sizes) ? editTarget.sizes.join(",") : (editTarget.sizes || ""),
-    img: editTarget.img || "", imgPublicId: editTarget.imgPublicId || null,
-    img2: editTarget.img2 || "", img2PublicId: editTarget.img2PublicId || null,
-    desc: editTarget.desc || "",
+    title:        editTarget.title,
+    cat:          editTarget.cat,
+    price:        String(editTarget.price),
+    disc:         String(editTarget.disc || 0),
+    quantity:     String(editTarget.quantity !== undefined ? editTarget.quantity : 100),
+    sizes:        Array.isArray(editTarget.sizes) ? editTarget.sizes.join(",") : (editTarget.sizes || ""),
+    img:          editTarget.img || "",
+    imgPublicId:  editTarget.imgPublicId || null,
+    img2:         editTarget.img2 || "",
+    img2PublicId: editTarget.img2PublicId || null,
+    desc:         editTarget.desc || "",
   } : BLANK;
 
   return (
@@ -202,7 +251,7 @@ export default function Products() {
           const sl  = p.stock === "low" ? `LOW (${p.quantity ?? ""})` : p.stock === "out" ? "OUT" : "IN";
           return (
             <div key={pid} className={`flex items-center gap-4 px-4 py-3 transition-colors ${(editTarget?._id || editTarget?.id) === pid ? "bg-amber/5 border-l-2 border-amber" : "hover:bg-cream"}`}>
-              <img src={p.img} alt={p.title} className="w-12 aspect-3/4 object-cover bg-cream shrink-0" />
+              <img src={p.img} alt={p.title} className="w-12 aspect-[3/4] object-cover bg-cream flex-shrink-0" />
               <div className="flex-1 min-w-0">
                 <p className="text-[13px] font-medium font-body truncate">{p.title}</p>
                 <p className="text-[9px] tracking-[2px] uppercase text-sand font-body">{p.cat}</p>
@@ -223,7 +272,7 @@ export default function Products() {
       </div>
 
       {deleteTarget && (
-        <DeleteModal product={deleteTarget} onConfirm={handleDelete} onCancel={() => setDeleteTarget(null)} loading={deleting} />
+        <DeleteModal product={deleteTarget} onConfirm={handleDelete} onCancel={() => { setDeleteTarget(null); setDeleting(false); }} loading={deleting} />
       )}
     </div>
   );

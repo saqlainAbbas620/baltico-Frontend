@@ -9,9 +9,9 @@ const api = axios.create({
 });
 
 // ── Token helpers ─────────────────────────────────────────────────────────────
-export const getToken   = ()  => localStorage.getItem("baltico_token");
-export const setToken   = (t) => localStorage.setItem("baltico_token", t);
-export const clearToken = ()  => localStorage.removeItem("baltico_token");
+export const getToken   = ()  => localStorage.getItem("lumiere_token");
+export const setToken   = (t) => localStorage.setItem("lumiere_token", t);
+export const clearToken = ()  => localStorage.removeItem("lumiere_token");
 
 // ── Refresh queue — prevent multiple simultaneous refresh requests ─────────────
 let isRefreshing = false;
@@ -81,7 +81,7 @@ api.interceptors.response.use(
     } catch (refreshError) {
       processQueue(refreshError, null);
       clearToken();
-      window.dispatchEvent(new CustomEvent("baltico:session-expired"));
+      window.dispatchEvent(new CustomEvent("lumiere:session-expired"));
       return Promise.reject(refreshError);
     } finally {
       isRefreshing = false;

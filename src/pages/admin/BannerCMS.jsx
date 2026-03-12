@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useStore } from "../../context/store";
-import { apiUpdateBanner, apiGetCategoryImages, apiUpdateCategoryImage } from "../../api";
+import { apiGetBanner, apiUpdateBanner, apiGetCategoryImages, apiUpdateCategoryImage } from "../../api";
 import ImagePicker from "../../components/ui/ImagePicker";
 
 const CAT_LABELS = { women: "Women", men: "Men", children: "Children / Kids" };
@@ -18,6 +18,16 @@ export default function BannerCMS() {
   });
 
   useEffect(() => {
+    // Fetch banner publicId so Cloudinary cleanup works on replace
+    apiGetBanner()
+      .then(res => {
+        const { url, publicId } = res.data?.data || {};
+        if (url) setBanner(url);
+        if (publicId) setBannerPublicId(publicId);
+      })
+      .catch(() => {});
+
+    // Fetch category images with publicIds
     apiGetCategoryImages().then(res => {
       const cats = res.data?.data?.categories;
       if (cats) {
@@ -34,13 +44,14 @@ export default function BannerCMS() {
     setSaving(true);
     try {
       await apiUpdateBanner({ url, publicId });
-      setBanner(url); setBannerPublicId(publicId);
+      setBanner(url);
+      setBannerPublicId(publicId);
       notify("Banner updated!");
-    } catch {
-      setBanner(url); setBannerPublicId(publicId);
-      notify("Banner updated (local)");
+    } catch (err) {
+      notify(err?.response?.data?.message || "Failed to save banner", true);
+    } finally {
+      setSaving(false);
     }
-    setSaving(false);
   }
 
   async function handleCategoryChange(cat, url, publicId) {
@@ -50,12 +61,11 @@ export default function BannerCMS() {
       setCatImages(prev => ({ ...prev, [cat]: { url, publicId } }));
       setCategoryImages(prev => ({ ...prev, [cat]: url }));
       notify(`${CAT_LABELS[cat]} image updated!`);
-    } catch {
-      setCatImages(prev => ({ ...prev, [cat]: { url, publicId } }));
-      setCategoryImages(prev => ({ ...prev, [cat]: url }));
-      notify(`${CAT_LABELS[cat]} updated (local)`);
+    } catch (err) {
+      notify(err?.response?.data?.message || `Failed to save ${CAT_LABELS[cat]} image`, true);
+    } finally {
+      setCatSaving(prev => ({ ...prev, [cat]: false }));
     }
-    setCatSaving(prev => ({ ...prev, [cat]: false }));
   }
 
   return (

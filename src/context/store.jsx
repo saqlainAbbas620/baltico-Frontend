@@ -1,8 +1,9 @@
 import { createContext, useContext, useState, useEffect } from "react";
 import toast from "react-hot-toast";
-import { apiGetProducts, apiCreateOrder, apiGetCategoryImages } from "../api";
+import { apiGetProducts, apiCreateOrder, apiGetBanner, apiGetCategoryImages, apiGetMe } from "../api";
 import { SEED_PRODUCTS, SEED_BANNER, SEED_CATEGORY_IMAGES } from "../data/seed";
 import { stockFromQty } from "../data/utils";
+import { getToken, clearToken } from "../api/axiosInstance";
 
 // ─── Context ───────────────────────────────────────────────────────────────────
 const Store = createContext(null);
@@ -10,20 +11,74 @@ const Store = createContext(null);
 export function StoreProvider({ children }) {
   // ── Persist user + cart in localStorage ───────────────────────────────────
   const [user, setUser] = useState(() => {
-    try { const s = localStorage.getItem("baltico_user"); return s ? JSON.parse(s) : null; }
+    try { const s = localStorage.getItem("lumiere_user"); return s ? JSON.parse(s) : null; }
     catch { return null; }
   });
   const [cart, setCart] = useState(() => {
-    try { const s = localStorage.getItem("baltico_cart"); return s ? JSON.parse(s) : []; }
+    try { const s = localStorage.getItem("lumiere_cart"); return s ? JSON.parse(s) : []; }
     catch { return []; }
   });
+
+  // Whether the session check on mount has completed
+  const [sessionChecked, setSessionChecked] = useState(false);
+
   useEffect(() => {
-    if (user) localStorage.setItem("baltico_user", JSON.stringify(user));
-    else      localStorage.removeItem("baltico_user");
+    if (user) localStorage.setItem("lumiere_user", JSON.stringify(user));
+    else      localStorage.removeItem("lumiere_user");
   }, [user]);
   useEffect(() => {
-    localStorage.setItem("baltico_cart", JSON.stringify(cart));
+    localStorage.setItem("lumiere_cart", JSON.stringify(cart));
   }, [cart]);
+
+  // ── Session validation on mount ───────────────────────────────────────────
+  // If there is a stored user but no token (or the token is expired),
+  // call /auth/me to validate. The axios interceptor will try to refresh
+  // using the HttpOnly cookie. If that also fails it fires
+  // "lumiere:session-expired" which calls clearSession() below.
+  useEffect(() => {
+    const storedUser = (() => {
+      try { const s = localStorage.getItem("lumiere_user"); return s ? JSON.parse(s) : null; }
+      catch { return null; }
+    })();
+
+    if (!storedUser) {
+      // No stored session — nothing to validate
+      setSessionChecked(true);
+      return;
+    }
+
+    const token = localStorage.getItem("lumiere_token");
+    if (!token) {
+      // Stored user but no token — clear the stale user immediately
+      clearSession();
+      setSessionChecked(true);
+      return;
+    }
+
+    // We have both a stored user and a token — validate with the server
+    apiGetMe()
+      .then(res => {
+        // Token is valid — sync user data from server in case it changed
+        const u = res.data?.data?.user;
+        if (u) {
+          setUser(prev => ({
+            ...prev,
+            name:    u.name    ?? prev?.name,
+            email:   u.email   ?? prev?.email,
+            isAdmin: u.isAdmin ?? prev?.isAdmin,
+            address: u.address ?? prev?.address,
+            phone:   u.phone   ?? prev?.phone,
+            id:      u.id      ?? prev?.id,
+          }));
+        }
+      })
+      .catch(() => {
+        // /auth/me failed even after the refresh interceptor tried —
+        // both tokens are gone. Clear everything.
+        clearSession();
+      })
+      .finally(() => setSessionChecked(true));
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // ── Products — fetched from API, fallback to seed ─────────────────────────
   const [products,        setProducts]        = useState(SEED_PRODUCTS);
@@ -48,6 +103,10 @@ export function StoreProvider({ children }) {
   const [categoryImages, setCategoryImages] = useState(SEED_CATEGORY_IMAGES);
 
   useEffect(() => {
+    apiGetBanner()
+      .then(res => { const url = res.data?.data?.url; if (url) setBanner(url); })
+      .catch(() => {});
+
     apiGetCategoryImages()
       .then(res => {
         const cats = res.data?.data?.categories;
@@ -64,6 +123,15 @@ export function StoreProvider({ children }) {
   function notify(msg, err = false) {
     if (err) toast.error(msg);
     else     toast.success(msg);
+  }
+
+  // ── Clear session (used by logout + session-expired handler) ─────────────
+  function clearSession() {
+    setUser(null);
+    setOrders([]);
+    clearToken();
+    localStorage.removeItem("lumiere_user");
+    localStorage.removeItem("lumiere_cart");
   }
 
   // ── Cart ──────────────────────────────────────────────────────────────────
@@ -88,7 +156,7 @@ export function StoreProvider({ children }) {
   function login(name, email, isAdmin = false, extra = {}) {
     setUser({
       name, email,
-      isAdmin: isAdmin || email === "admin@baltico.com",
+      isAdmin: isAdmin || email === "admin@lumiere.com",
       address: extra.address || "",
       phone:   extra.phone   || "",
       avatar:  extra.avatar  || "",
@@ -97,11 +165,8 @@ export function StoreProvider({ children }) {
   }
   function logout() {
     import("../api").then(({ apiLogout }) => apiLogout().catch(() => {}));
-    setUser(null);
     setCart([]);
-    localStorage.removeItem("baltico_token");
-    localStorage.removeItem("baltico_user");
-    localStorage.removeItem("baltico_cart");
+    clearSession();
   }
 
   // ── Place order ───────────────────────────────────────────────────────────
@@ -118,7 +183,10 @@ export function StoreProvider({ children }) {
         size:  i.size,
         img:   i.img || "",
       })),
-      total, addr, phone: phone || "", payment: "cod",
+      total, addr, phone: phone || "",
+      payment: "cod",
+      userName:  user?.name  || "",
+      userPhone: phone || user?.phone || "",
     });
 
     const apiOrder = res.data?.data?.order;
@@ -136,7 +204,6 @@ export function StoreProvider({ children }) {
       phone:     phone || "",
     };
 
-    // Decrease local product quantities
     setProducts(prev => prev.map(p => {
       const pid     = String(p._id || p.id);
       const ordered = items.find(i => String(i._id || i.id) === pid);
@@ -147,7 +214,7 @@ export function StoreProvider({ children }) {
 
     setOrders(prev => [order, ...prev]);
     setCart([]);
-    window.dispatchEvent(new CustomEvent("baltico:new-order", { detail: order }));
+    window.dispatchEvent(new CustomEvent("lumiere:new-order", { detail: order }));
     return order;
   }
 
@@ -161,11 +228,9 @@ export function StoreProvider({ children }) {
       stock:     stockFromQty(qty),
       createdAt: p.createdAt || new Date().toISOString(),
     }, ...prev]);
-    notify("Product added");
   }
   function removeProduct(id) {
     setProducts(prev => prev.filter(p => (p._id || p.id) !== id));
-    notify("Product removed");
   }
   function updateProduct(id, data) {
     setProducts(prev => prev.map(p => {
@@ -173,26 +238,24 @@ export function StoreProvider({ children }) {
       const qty = data.quantity !== undefined ? +data.quantity : p.quantity;
       return { ...p, ...data, quantity: qty, stock: stockFromQty(qty) };
     }));
-    notify("Product updated");
   }
 
   // ── Admin: orders ─────────────────────────────────────────────────────────
   function updateOrderStatus(id, status) {
     setOrders(prev => prev.map(o => (o._id === id || o.id === id) ? { ...o, status } : o));
-    notify("Order updated");
   }
 
   // ── Profile ───────────────────────────────────────────────────────────────
   function updateProfile(data) {
     setUser(prev => ({ ...prev, ...data }));
-    notify("Profile saved");
   }
 
   return (
     <Store.Provider value={{
       user, cart, products, productsLoading, orders, banner, categoryImages,
+      sessionChecked,
       notify, addToCart, removeFromCart, updateQty,
-      login, logout, placeOrder,
+      login, logout, clearSession, placeOrder,
       addProduct, removeProduct, updateProduct, updateOrderStatus, updateProfile,
       setBanner, setCategoryImages, setProducts, setOrders,
     }}>
