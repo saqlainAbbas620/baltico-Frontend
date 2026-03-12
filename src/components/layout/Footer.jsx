@@ -33,7 +33,7 @@ export default function Footer() {
         </div>
         <div className="flex flex-wrap justify-between gap-2 text-[10px] sm:text-[11px] text-white/30 font-body">
           <span>© 2026 BaltiCo. All rights reserved.</span>
-          <span className="text-gold/40">Admin: admin@lumiere.com</span>
+          <span className="text-gold/40" >Developed By: <a href="https://www.linkedin.com/in/saqlain-abbas-913a84258/">Saqlain Abbas</a></span>
         </div>
       </div>
     </footer>
