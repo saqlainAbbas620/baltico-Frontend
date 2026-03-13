@@ -217,9 +217,6 @@ export default function AuthPage() {
             }
           </button>
 
-          <p className="text-center text-[11px] text-sand font-body">
-            Demo admin: <span className="font-medium text-ink">admin@baltico.com</span>
-          </p>
         </div>
       </div>
 
