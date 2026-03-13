@@ -6,7 +6,7 @@ import { apiGetAllOrders, apiUpdateOrderStatus } from "../../api";
 
 function OrderDetailModal({ order, onClose, onStatusChange }) {
   return (
-    <div className="fixed inset-0 z-[500] flex items-center justify-center p-4">
+    <div className="fixed inset-0 z-500 flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-black/50" onClick={onClose} />
       <div className="relative bg-white w-full max-w-lg max-h-[90vh] overflow-y-auto flex flex-col">
         {/* Header */}
@@ -35,7 +35,7 @@ function OrderDetailModal({ order, onClose, onStatusChange }) {
             <p className="text-[9px] font-bold tracking-[3px] uppercase text-ink/50 font-body">Items Ordered</p>
             {order.items?.map((item, i) => (
               <div key={i} className="flex items-center gap-3 border-b border-sand pb-3 last:border-0">
-                {item.img && <img src={item.img} alt={item.title} className="w-10 h-12 object-cover bg-cream flex-shrink-0" />}
+                {item.img && <img src={item.img} alt={item.title} className="w-10 h-12 object-cover bg-cream shrink-0" />}
                 <div className="flex-1">
                   <p className="text-[13px] font-medium font-body">{item.title}</p>
                   <p className="text-[11px] text-sand font-body">Size: {item.size} &nbsp;·&nbsp; Qty: {item.qty}</p>

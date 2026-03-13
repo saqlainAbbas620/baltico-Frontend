@@ -85,7 +85,7 @@ function ProductForm({ initial = BLANK, onSave, onCancel, saving, isEdit }) {
 
 function DeleteModal({ product, onConfirm, onCancel, loading }) {
   return (
-    <div className="fixed inset-0 z-[500] flex items-center justify-center">
+    <div className="fixed inset-0 z-500 flex items-center justify-center">
       <div className="absolute inset-0 bg-black/40" onClick={onCancel} />
       <div className="relative bg-white p-8 max-w-sm w-full mx-4 flex flex-col gap-5">
         <p className="text-[10px] font-bold tracking-[3px] uppercase text-red-500 font-body">DELETE PRODUCT</p>
@@ -251,7 +251,7 @@ export default function Products() {
           const sl  = p.stock === "low" ? `LOW (${p.quantity ?? ""})` : p.stock === "out" ? "OUT" : "IN";
           return (
             <div key={pid} className={`flex items-center gap-4 px-4 py-3 transition-colors ${(editTarget?._id || editTarget?.id) === pid ? "bg-amber/5 border-l-2 border-amber" : "hover:bg-cream"}`}>
-              <img src={p.img} alt={p.title} className="w-12 aspect-[3/4] object-cover bg-cream flex-shrink-0" />
+              <img src={p.img} alt={p.title} className="w-12 aspect-3/4 object-cover bg-cream shrink-0" />
               <div className="flex-1 min-w-0">
                 <p className="text-[13px] font-medium font-body truncate">{p.title}</p>
                 <p className="text-[9px] tracking-[2px] uppercase text-sand font-body">{p.cat}</p>
