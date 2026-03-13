@@ -30,7 +30,7 @@ export default function MobileMenu({ onClose }) {
         {/* Header */}
         <div className="flex items-center justify-between px-5 h-14 border-b border-sand shrink-0">
           {/* <span className="font-display text-xl">BaltiCo</span> */}
-          <button onClick={() => navigate("/")} className="font-display text-xl">BaltiCo</button>
+          <button onClick={() => {onClose(); navigate("/"); }} className="font-display text-xl">BaltiCo</button>
           <div className="flex items-center gap-3">
             <button onClick={() => nav(user ? "/profile" : "/auth")} className="p-1">
               <HiOutlineUser size={18} />
