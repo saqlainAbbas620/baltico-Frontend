@@ -52,9 +52,9 @@ function VerifyRedirectHandler() {
       return;
     }
 
-    localStorage.setItem("lumiere_token", token);
+    localStorage.setItem("baltico_token", token);
     login(name, email, isAdmin, { id });
-    toast.success("✅ Email verified! Welcome to Lumière.");
+    toast.success("✅ Email verified! Welcome to Baltico.");
     navigate("/", { replace: true });
   }, []); // eslint-disable-line
 
@@ -75,8 +75,8 @@ function SessionHandler() {
       toast.error("Session expired. Please sign in again.");
       navigate("/auth", { replace: true });
     }
-    window.addEventListener("lumiere:session-expired", handleExpired);
-    return () => window.removeEventListener("lumiere:session-expired", handleExpired);
+    window.addEventListener("baltico:session-expired", handleExpired);
+    return () => window.removeEventListener("baltico:session-expired", handleExpired);
   }, [clearSession, navigate]);
 
   return null;

@@ -97,8 +97,8 @@ export default function Orders() {
   useEffect(() => {
     load();
     const handler = () => { setNewOrderBadge(true); setTimeout(load, 1000); };
-    window.addEventListener("lumiere:new-order", handler);
-    return () => window.removeEventListener("lumiere:new-order", handler);
+    window.addEventListener("baltico:new-order", handler);
+    return () => window.removeEventListener("baltico:new-order", handler);
   }, []);
 
   async function changeStatus(id, status) {

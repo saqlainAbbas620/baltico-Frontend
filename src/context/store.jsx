@@ -11,11 +11,11 @@ const Store = createContext(null);
 export function StoreProvider({ children }) {
   // ── Persist user + cart in localStorage ───────────────────────────────────
   const [user, setUser] = useState(() => {
-    try { const s = localStorage.getItem("lumiere_user"); return s ? JSON.parse(s) : null; }
+    try { const s = localStorage.getItem("baltico_user"); return s ? JSON.parse(s) : null; }
     catch { return null; }
   });
   const [cart, setCart] = useState(() => {
-    try { const s = localStorage.getItem("lumiere_cart"); return s ? JSON.parse(s) : []; }
+    try { const s = localStorage.getItem("baltico_cart"); return s ? JSON.parse(s) : []; }
     catch { return []; }
   });
 
@@ -23,21 +23,21 @@ export function StoreProvider({ children }) {
   const [sessionChecked, setSessionChecked] = useState(false);
 
   useEffect(() => {
-    if (user) localStorage.setItem("lumiere_user", JSON.stringify(user));
-    else      localStorage.removeItem("lumiere_user");
+    if (user) localStorage.setItem("baltico_user", JSON.stringify(user));
+    else      localStorage.removeItem("baltico_user");
   }, [user]);
   useEffect(() => {
-    localStorage.setItem("lumiere_cart", JSON.stringify(cart));
+    localStorage.setItem("baltico_cart", JSON.stringify(cart));
   }, [cart]);
 
   // ── Session validation on mount ───────────────────────────────────────────
   // If there is a stored user but no token (or the token is expired),
   // call /auth/me to validate. The axios interceptor will try to refresh
   // using the HttpOnly cookie. If that also fails it fires
-  // "lumiere:session-expired" which calls clearSession() below.
+  // "baltico:session-expired" which calls clearSession() below.
   useEffect(() => {
     const storedUser = (() => {
-      try { const s = localStorage.getItem("lumiere_user"); return s ? JSON.parse(s) : null; }
+      try { const s = localStorage.getItem("baltico_user"); return s ? JSON.parse(s) : null; }
       catch { return null; }
     })();
 
@@ -47,7 +47,7 @@ export function StoreProvider({ children }) {
       return;
     }
 
-    const token = localStorage.getItem("lumiere_token");
+    const token = localStorage.getItem("baltico_token");
     if (!token) {
       // Stored user but no token — clear the stale user immediately
       clearSession();
@@ -130,8 +130,8 @@ export function StoreProvider({ children }) {
     setUser(null);
     setOrders([]);
     clearToken();
-    localStorage.removeItem("lumiere_user");
-    localStorage.removeItem("lumiere_cart");
+    localStorage.removeItem("baltico_user");
+    localStorage.removeItem("baltico_cart");
   }
 
   // ── Cart ──────────────────────────────────────────────────────────────────
@@ -156,7 +156,7 @@ export function StoreProvider({ children }) {
   function login(name, email, isAdmin = false, extra = {}) {
     setUser({
       name, email,
-      isAdmin: isAdmin || email === "admin@lumiere.com",
+      isAdmin: isAdmin || email === "admin@baltico.com",
       address: extra.address || "",
       phone:   extra.phone   || "",
       avatar:  extra.avatar  || "",
@@ -214,7 +214,7 @@ export function StoreProvider({ children }) {
 
     setOrders(prev => [order, ...prev]);
     setCart([]);
-    window.dispatchEvent(new CustomEvent("lumiere:new-order", { detail: order }));
+    window.dispatchEvent(new CustomEvent("baltico:new-order", { detail: order }));
     return order;
   }
 
