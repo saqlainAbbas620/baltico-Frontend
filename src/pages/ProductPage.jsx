@@ -1,8 +1,136 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { FiHeart, FiArrowLeft } from "react-icons/fi";
 import { useStore } from "../context/store";
 import { finalPrice, fmt } from "../data/utils";
+
+// ── Swipeable image gallery (mobile only) ────────────────────────────────────
+function MobileGallery({ imgs, disc }) {
+  const [index, setIndex]     = useState(0);
+  const touchStart            = useRef(null);
+  const dragging              = useRef(false);
+  const [dragX, setDragX]     = useState(0); // live drag offset in px
+
+  const total = imgs.length;
+
+  function onTouchStart(e) {
+    touchStart.current = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+    dragging.current   = false;
+    setDragX(0);
+  }
+
+  function onTouchMove(e) {
+    if (!touchStart.current) return;
+    const dx = e.touches[0].clientX - touchStart.current.x;
+    const dy = Math.abs(e.touches[0].clientY - touchStart.current.y);
+
+    // If vertical movement dominates, don't hijack the scroll
+    if (!dragging.current && dy > Math.abs(dx)) {
+      touchStart.current = null;
+      return;
+    }
+
+    dragging.current = true;
+    e.preventDefault(); // stop page scroll while swiping image
+    setDragX(dx);
+  }
+
+  function onTouchEnd(e) {
+    if (!touchStart.current || !dragging.current) {
+      touchStart.current = null;
+      setDragX(0);
+      return;
+    }
+
+    const dx = e.changedTouches[0].clientX - touchStart.current.x;
+    touchStart.current = null;
+    setDragX(0);
+
+    // Threshold: swipe more than 50px to change image
+    if (dx < -50 && index < total - 1) setIndex(i => i + 1);
+    else if (dx > 50 && index > 0)     setIndex(i => i - 1);
+  }
+
+  return (
+    <div className="lg:hidden">
+      {/* Image track */}
+      <div
+        className="relative w-full aspect-3/4 overflow-hidden bg-cream select-none"
+        onTouchStart={onTouchStart}
+        onTouchMove={onTouchMove}
+        onTouchEnd={onTouchEnd}
+        style={{ touchAction: "pan-y" }} // allow vertical page scroll, we handle horizontal
+      >
+        {/* Sliding track — all images side by side */}
+        <div
+          className="flex h-full"
+          style={{
+            width:     `${total * 100}%`,
+            transform: `translateX(calc(${-index * (100 / total)}% + ${dragX / total}px))`,
+            transition: dragging.current ? "none" : "transform 0.3s ease",
+          }}
+        >
+          {imgs.map((img, i) => (
+            <div
+              key={i}
+              className="relative h-full shrink-0"
+              style={{ width: `${100 / total}%` }}
+            >
+              <img
+                src={img}
+                alt={`Product image ${i + 1}`}
+                draggable={false}
+                className="w-full h-full object-cover pointer-events-none"
+              />
+            </div>
+          ))}
+        </div>
+
+        {/* Discount badge */}
+        {disc > 0 && (
+          <span className="absolute top-3 left-3 z-10 bg-ink text-white text-[9px] font-bold px-2 py-0.5 font-body">
+            −{disc}%
+          </span>
+        )}
+
+        {/* Arrow hints (only when multiple images) */}
+        {total > 1 && (
+          <>
+            {index > 0 && (
+              <button
+                onClick={() => setIndex(i => i - 1)}
+                className="absolute left-2 top-1/2 -translate-y-1/2 z-10 w-7 h-7 bg-white/80 flex items-center justify-center text-ink text-sm"
+              >‹</button>
+            )}
+            {index < total - 1 && (
+              <button
+                onClick={() => setIndex(i => i + 1)}
+                className="absolute right-2 top-1/2 -translate-y-1/2 z-10 w-7 h-7 bg-white/80 flex items-center justify-center text-ink text-sm"
+              >›</button>
+            )}
+          </>
+        )}
+      </div>
+
+      {/* Dot indicators */}
+      {total > 1 && (
+        <div className="flex justify-center gap-1.5 py-2">
+          {imgs.map((_, i) => (
+            <button
+              key={i}
+              onClick={() => setIndex(i)}
+              className={`transition-all rounded-full ${
+                index === i
+                  ? "w-4 h-1.5 bg-ink"
+                  : "w-1.5 h-1.5 bg-sand"
+              }`}
+            />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
 
 export default function ProductPage() {
   const { id }    = useParams();
@@ -59,21 +187,8 @@ export default function ProductPage() {
 
           {/* Main images */}
           <div className="flex-1 flex flex-col gap-px">
-            {/* Mobile single image with dots */}
-            <div className="lg:hidden">
-              <div className="relative w-full aspect-3/4 overflow-hidden bg-cream">
-                <img src={imgs[activeImg] || p.img} alt={p.title} className="w-full h-full object-cover" />
-                {p.disc > 0 && <span className="absolute top-3 left-3 bg-ink text-white text-[9px] font-bold px-2 py-0.5 font-body">−{p.disc}%</span>}
-              </div>
-              {imgs.length > 1 && (
-                <div className="flex justify-center gap-1.5 py-2">
-                  {imgs.map((_, i) => (
-                    <button key={i} onClick={() => setActiveImg(i)}
-                      className={`w-1.5 h-1.5 rounded-full transition-all ${activeImg===i?"bg-ink":"bg-sand"}`} />
-                  ))}
-                </div>
-              )}
-            </div>
+            {/* Mobile swipeable gallery */}
+            <MobileGallery imgs={imgs} disc={p.disc} />
             {/* Desktop stacked */}
             <div className="hidden lg:flex flex-col gap-px">
               {imgs.map((img, i) => (
@@ -131,7 +246,9 @@ export default function ProductPage() {
               className={`text-[11px] font-bold tracking-[3px] uppercase py-4 sm:py-4.5 w-full transition-opacity font-body ${isOut?"bg-sand/50 text-ink/40 cursor-not-allowed":"bg-ink text-white hover:opacity-70"}`}>
               {isOut ? "OUT OF STOCK" : "ADD TO CART"}
             </button>
-            
+            <button className="border border-sand text-[10px] font-bold tracking-[2.5px] uppercase py-3.5 w-full flex items-center justify-center gap-2 hover:border-ink transition-colors font-body">
+              <FiHeart size={13} /> WISHLIST
+            </button>
           </div>
 
           <div className="border-t border-sand pt-4 flex flex-col gap-1.5">

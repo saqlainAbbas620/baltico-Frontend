@@ -27,9 +27,9 @@ export default function HomePage() {
   return (
     <div>
       {/* Hero */}
-      <div className="relative h-[75vh] sm:h-[85vh] min-h-[400px] flex items-end overflow-hidden">
+      <div className="relative h-[75vh] sm:h-[85vh] min-h-100 flex items-end overflow-hidden">
         <img src={banner} alt="banner" className="absolute inset-0 w-full h-full object-cover object-top" />
-        <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/10 to-transparent" />
+        <div className="absolute inset-0 bg-linear-to-t from-black/75 via-black/10 to-transparent" />
         <div className="relative z-10 px-5 sm:px-8 pb-10 sm:pb-14 text-white">
           <p className="text-[9px] sm:text-[10px] font-bold tracking-[4px] uppercase text-gold mb-2 sm:mb-3 font-body">SS26 Collection</p>
           <h1 className="font-display text-6xl sm:text-8xl md:text-[110px] leading-none mb-5 sm:mb-7">New<br />Season</h1>
@@ -41,7 +41,7 @@ export default function HomePage() {
       </div>
 
       {/* Category tiles */}
-      <div className="grid grid-cols-3 h-[35vh] sm:h-[45vh] min-h-[160px]">
+      <div className="grid grid-cols-3 h-[35vh] sm:h-[45vh] min-h-40">
         {catTiles.map(c => (
           <button key={c.path} onClick={() => navigate(c.path)} className="relative overflow-hidden group text-left">
             <img src={c.img} alt={c.label} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" />
@@ -76,8 +76,8 @@ export default function HomePage() {
         ) : (
           <div className="relative">
             {/* Fade edges — pointer-events-none so they don't block swipe */}
-            <div className="pointer-events-none absolute left-0 top-0 bottom-0 w-6 bg-gradient-to-r from-white to-transparent z-10" />
-            <div className="pointer-events-none absolute right-0 top-0 bottom-0 w-6 bg-gradient-to-l from-white to-transparent z-10" />
+            <div className="pointer-events-none absolute left-0 top-0 bottom-0 w-6 bg-linear-to-r from-white to-transparent z-10" />
+            <div className="pointer-events-none absolute right-0 top-0 bottom-0 w-6 bg-linear-to-l from-white to-transparent z-10" />
             <div
               ref={scrollRef}
               className="flex gap-px bg-sand overflow-x-auto scroll-smooth hide-scrollbar"
@@ -93,12 +93,12 @@ export default function HomePage() {
               }}
             >
               {newInList.map(p => (
-                <div key={p.id || p._id} className="bg-white p-2.5 sm:p-3 flex-shrink-0 w-[160px] sm:w-[220px]">
+                <div key={p.id || p._id} className="bg-white p-2.5 sm:p-3 shrink-0 w-40 sm:w-55">
                   <ProductCard p={p} />
                 </div>
               ))}
               <div onClick={() => navigate("/products")}
-                className="bg-ink text-white p-3 flex-shrink-0 w-[130px] sm:w-[160px] flex flex-col items-center justify-center gap-2 cursor-pointer hover:opacity-80 transition-opacity">
+                className="bg-ink text-white p-3 shrink-0 w-32.5 sm:w-40 flex flex-col items-center justify-center gap-2 cursor-pointer hover:opacity-80 transition-opacity">
                 <span className="text-3xl sm:text-[32px] font-serif italic font-light">{products.length}</span>
                 <span className="text-[8px] sm:text-[9px] font-bold tracking-[2px] sm:tracking-[3px] uppercase font-body text-center">All<br />Products</span>
                 <span className="text-lg sm:text-xl text-white/50">→</span>
