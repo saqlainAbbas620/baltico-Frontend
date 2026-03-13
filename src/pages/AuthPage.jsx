@@ -79,11 +79,23 @@ export default function AuthPage() {
     useGoogleAuth(handleGoogleCallback);
 
   async function handleGoogleCallback(response) {
-    const { credential } = response;
-    if (!credential) { notify("Google sign-in failed", true); return; }
+    // response is either { code } (oauth2 flow) or { credential } (legacy One Tap)
+    // or { error } if user cancelled
+    if (response.error === "cancelled") return; // user closed the popup
+    if (response.error) { notify("Google sign-in failed", true); return; }
+
+    const payload = response.code
+      ? { code: response.code }
+      : { credential: response.credential };
+
+    if (!payload.code && !payload.credential) {
+      notify("Google sign-in failed", true);
+      return;
+    }
+
     setError("");
     try {
-      const res = await apiGoogleAuth(credential);
+      const res = await apiGoogleAuth(payload);
       const { token, user } = res.data.data;
       localStorage.setItem("baltico_token", token);
       login(user.name, user.email, user.isAdmin, { address: user.address, phone: user.phone, avatar: user.avatar, id: user.id });
@@ -205,7 +217,9 @@ export default function AuthPage() {
             }
           </button>
 
-        
+          <p className="text-center text-[11px] text-sand font-body">
+            Demo admin: <span className="font-medium text-ink">admin@baltico.com</span>
+          </p>
         </div>
       </div>
 

@@ -4,7 +4,7 @@ export const apiLogin      = (email, password)       => api.post("/auth/login", 
 export const apiRegister   = (name, email, password) => api.post("/auth/register", { name, email, password });
 export const apiGetMe      = ()                      => api.get("/auth/me");
 export const apiProfile    = (data)                  => api.put("/auth/profile",   data);
-export const apiGoogleAuth = (credential)            => api.post("/auth/google",   { credential });
+export const apiGoogleAuth = (payload)            => api.post("/auth/google",   payload);
 export const apiRefresh    = ()                      => api.post("/auth/refresh");
 export const apiLogout     = ()                      => api.post("/auth/logout");
 export const apiResendVerification = (email)         => api.post("/auth/resend-verification", { email });
