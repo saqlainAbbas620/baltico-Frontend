@@ -3,6 +3,7 @@ import axios from "axios";
 // ── Base instance ─────────────────────────────────────────────────────────────
 const api = axios.create({
   baseURL: "https://baltico-backend.vercel.app/api",
+  // baseURL:"http://localhost:5001/api",
   timeout: 30000,
   headers: { "Content-Type": "application/json" },
   withCredentials: true, // send HttpOnly refresh cookie automatically
