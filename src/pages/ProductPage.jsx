@@ -131,9 +131,7 @@ export default function ProductPage() {
               className={`text-[11px] font-bold tracking-[3px] uppercase py-4 sm:py-4.5 w-full transition-opacity font-body ${isOut?"bg-sand/50 text-ink/40 cursor-not-allowed":"bg-ink text-white hover:opacity-70"}`}>
               {isOut ? "OUT OF STOCK" : "ADD TO CART"}
             </button>
-            <button className="border border-sand text-[10px] font-bold tracking-[2.5px] uppercase py-3.5 w-full flex items-center justify-center gap-2 hover:border-ink transition-colors font-body">
-              <FiHeart size={13} /> WISHLIST
-            </button>
+            
           </div>
 
           <div className="border-t border-sand pt-4 flex flex-col gap-1.5">
